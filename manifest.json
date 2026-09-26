@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "月の窓",
+  "version": "0.2.0",
+  "description": "利用頻度・最近の利用・時間帯からサイトをおすすめする、端末内で学習する新規タブ。",
+  "permissions": ["storage", "search"],
+  "optional_permissions": ["history"],
+  "chrome_url_overrides": { "newtab": "newtab.html" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "incognito": "not_allowed",
+  "minimum_chrome_version": "120",
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'" }
+}

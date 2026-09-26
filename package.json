@@ -1,0 +1,19 @@
+{
+  "name": "tsuki-no-mado",
+  "version": "0.2.0",
+  "private": true,
+  "description": "閲覧履歴を端末内で処理してサイトを推薦するChrome新規タブ拡張",
+  "author": "yun",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/yunyun777-bit/tsuki-no-mado.git" },
+  "bugs": { "url": "https://github.com/yunyun777-bit/tsuki-no-mado/issues" },
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.js && node --test",
+    "package": "node scripts/package.js",
+    "evaluate": "node scripts/evaluate.js",
+    "preview": "node scripts/preview.js"
+  }
+}
