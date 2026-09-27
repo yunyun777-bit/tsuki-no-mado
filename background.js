@@ -45,6 +45,7 @@ async function handle(message) {
   const state = await read();
   if (message.type === 'enable') {
     if (!(await chrome.permissions.contains({ permissions: ['history'] }))) throw new Error('履歴の許可が必要です。');
+    registerHistoryListeners();
     state.learning = true;
     if (!state.importedAt) await importHistory(state);
   } else if (message.type === 'pause') {
@@ -61,16 +62,16 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   return true;
 });
 
-chrome.history.onVisited.addListener(item => {
+function onHistoryVisited(item) {
   exclusive(async () => {
     const state = await read();
     if (!state.learning || !(await chrome.permissions.contains({ permissions: ['history'] }))) return;
     recordVisit(state, item.url, item.lastVisitTime || Date.now());
     await save(prune(state));
   }).catch(() => {});
-});
+}
 
-chrome.history.onVisitRemoved.addListener(event => {
+function onHistoryRemoved() {
   exclusive(async () => {
     const state = await read();
     // URLを永続保存しないため、一部履歴の削除でも学習した訪問記録を全消去する。
@@ -78,6 +79,20 @@ chrome.history.onVisitRemoved.addListener(event => {
     state.importedAt = null;
     await save(prune(state));
   }).catch(() => {});
+}
+
+function registerHistoryListeners() {
+  // Optional APIs are absent before permission is granted. Register synchronously
+  // on worker startup when available, and again when the grant arrives.
+  const history = chrome.history;
+  if (!history) return;
+  if (!history.onVisited.hasListener(onHistoryVisited)) history.onVisited.addListener(onHistoryVisited);
+  if (!history.onVisitRemoved.hasListener(onHistoryRemoved)) history.onVisitRemoved.addListener(onHistoryRemoved);
+}
+
+registerHistoryListeners();
+chrome.permissions.onAdded.addListener(permissions => {
+  if (permissions.permissions?.includes('history')) registerHistoryListeners();
 });
 
 chrome.permissions.onRemoved.addListener(permissions => {
