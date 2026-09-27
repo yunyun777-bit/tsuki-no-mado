@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
   "name": "月の窓",
-  "version": "0.2.1",
+  "version": "0.4.0",
+  "icons": {
+    "16": "assets/brand/icon-16.png",
+    "32": "assets/brand/icon-32.png",
+    "48": "assets/brand/icon-48.png",
+    "128": "assets/brand/icon-128.png"
+  },
   "description": "利用頻度・最近の利用・時間帯からサイトをおすすめする、端末内で学習する新規タブ。",
-  "permissions": ["storage", "search"],
+  "permissions": ["storage", "search", "favicon"],
   "optional_permissions": ["history"],
   "chrome_url_overrides": { "newtab": "newtab.html" },
   "background": { "service_worker": "background.js", "type": "module" },

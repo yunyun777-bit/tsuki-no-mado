@@ -1,4 +1,5 @@
 import { normalizeFeatures, editFeatures } from './features.js';
+import { restoreBackup } from './backup.js';
 export const DAY = 86_400_000;
 export const MAX_SITES = 300;
 export const RETENTION_DAYS = 90;
@@ -16,6 +17,7 @@ export function siteOrigin(value) {
 }
 
 export function prune(state, now = Date.now()) {
+  for (const [origin, until] of Object.entries(state.snoozed || {})) if (until <= now) delete state.snoozed[origin];
   const cutoff = now - RETENTION_DAYS * DAY;
   for (const [origin, site] of Object.entries(state.sites)) {
     site.visits = site.visits.filter(time => Number.isFinite(time) && time >= cutoff && time <= now);
@@ -47,7 +49,7 @@ export function rankSites(state, now = Date.now()) {
   const current = new Date(now);
   const currentHour = current.getHours() + current.getMinutes() / 60;
   const currentWeekend = [0, 6].includes(current.getDay());
-  return Object.values(state.sites).filter(site => !state.hidden.includes(site.origin)).map(site => {
+  return Object.values(state.sites).filter(site => !state.hidden.includes(site.origin) && !(state.snoozed?.[site.origin] > now)).map(site => {
     let frequency = 0, timing = 0, weekday = 0, latest = 0;
     for (const time of site.visits) {
       const age = (now - time) / DAY;
@@ -72,16 +74,25 @@ export function rankSites(state, now = Date.now()) {
 }
 
 export function editState(state, action, now = Date.now()) {
+  if (action.type === 'backup-restore') return restoreBackup(state, action.backup);
   if (editFeatures(state, action)) return state;
   const origin = siteOrigin(action.origin);
   if (action.type === 'restore') { state.hidden = []; return state; }
   if (!origin) throw new Error('http または https のサイトURLを入力してください。');
-  if (action.type === 'add') {
+  if (action.type === 'snooze') {
+    if (!state.sites[origin]) throw new Error('サイトが見つかりません。');
+    if (!['today', 'week'].includes(action.duration)) throw new Error('非表示の期間を選んでください。');
+    const tomorrow = new Date(now); tomorrow.setHours(24, 0, 0, 0);
+    state.snoozed[origin] = action.duration === 'today' ? tomorrow.getTime() : now + 7 * DAY;
+  } else if (action.type === 'unsnooze') {
+    delete state.snoozed[origin];
+  } else if (action.type === 'add') {
     if (!state.sites[origin] && Object.keys(state.sites).length >= MAX_SITES)
       throw new Error('登録上限（300サイト）に達しました。不要なサイトを非表示にしてください。');
     state.sites[origin] ||= { origin, visits: [], manual: true };
     state.sites[origin].manual = true;
     state.hidden = state.hidden.filter(item => item !== origin);
+    delete state.snoozed[origin];
   } else if (action.type === 'pin') {
     if (!state.sites[origin]) throw new Error('サイトが見つかりません。');
     if (state.pins.includes(origin)) state.pins = state.pins.filter(item => item !== origin);
@@ -93,6 +104,7 @@ export function editState(state, action, now = Date.now()) {
     if (!state.hidden.includes(origin)) state.hidden.push(origin);
     state.pins = state.pins.filter(item => item !== origin);
     delete state.sites[origin];
+    delete state.snoozed[origin];
   } else throw new Error('不明な操作です。');
   return prune(state, now);
 }

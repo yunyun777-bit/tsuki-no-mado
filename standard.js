@@ -1,11 +1,14 @@
 import { defaultAppearance, normalizeFeatures, shortcutURL } from './features.js';
 import { isPreview, searchOrNavigate } from './client.js';
+import { createSiteIcon } from './icons.js';
+import { atmosphere, moonPath } from './atmosphere.js';
 
 const $ = id => document.getElementById(id);
 let actions;
 let editingId = null;
 let currentState;
 let undoShortcut = null;
+let firstRender = true;
 const darkPreference = matchMedia('(prefers-color-scheme: dark)');
 
 function element(tag, className, text) {
@@ -20,6 +23,8 @@ function openShortcut(shortcut) {
   $('shortcut-title').textContent = shortcut ? 'ショートカットを編集' : 'ショートカットを追加';
   $('shortcut-name').value = shortcut?.name || '';
   $('shortcut-url').value = shortcut?.url || '';
+  $('shortcut-group').replaceChildren(...currentState.groups.map(group => new Option(group.name, group.id)));
+  $('shortcut-group').value = shortcut?.groupId || currentState.activeGroup;
   $('shortcut-error').textContent = '';
   $('shortcut-delete').hidden = !shortcut;
   $('shortcut-dialog').showModal();
@@ -27,8 +32,15 @@ function openShortcut(shortcut) {
 }
 
 function applyAppearance(appearance) {
-  document.documentElement.dataset.theme = appearance.theme === 'system' ? (darkPreference.matches ? 'dark' : 'light') : appearance.theme;
+  const sky = atmosphere(appearance, darkPreference.matches);
+  document.documentElement.dataset.theme = sky.theme;
+  for (const [i, name] of ['top', 'middle', 'bottom'].entries())
+    document.body.style.setProperty(`--sky-${name}`, `rgb(${sky.colors[i].join(',')})`);
+  const phasePath = moonPath(sky.phase);
+  $('moon-lit').setAttribute('d', phasePath);
+  $('moon-clip-shape').setAttribute('d', phasePath);
   document.body.dataset.backdrop = appearance.backdrop;
+  document.body.dataset.motion = appearance.motion ? 'on' : 'off';
   document.body.classList.toggle('has-wallpaper', !!appearance.image);
   document.body.style.setProperty('--wallpaper', appearance.image ? `url("${appearance.image}")` : 'none');
 }
@@ -41,21 +53,24 @@ export function renderStandard(state) {
   $('theme-select').value = appearance.theme;
   $('backdrop-select').value = appearance.backdrop;
   $('show-shortcuts').checked = appearance.showShortcuts;
+  $('show-motion').checked = appearance.motion;
   $('shortcut-mode').value = appearance.shortcutMode;
   $('background-clear').disabled = !appearance.image;
   $('shortcuts-area').hidden = !appearance.showShortcuts;
   const frequent = appearance.shortcutMode === 'frequent';
   const sites = frequent
-    ? Object.values(state.sites).filter(site => !state.hidden.includes(site.origin) && site.visits.length)
+    ? Object.values(state.sites).filter(site => !state.hidden.includes(site.origin) && site.visits.length && !(state.snoozed[site.origin] > Date.now()))
       .sort((a, b) => b.visits.length - a.visits.length || a.origin.localeCompare(b.origin)).slice(0, 10)
       .map(site => ({ url: site.origin, name: new URL(site.origin).hostname.replace(/^www\./, '') }))
-    : state.shortcuts;
+    : state.shortcuts.filter(item => item.groupId === state.activeGroup);
   $('shortcuts-note').hidden = !frequent || sites.length > 0;
   const tiles = sites.map((shortcut, index) => {
     const tile = element('div', 'shortcut-tile');
+    if (firstRender) tile.classList.add('arrive');
+    tile.style.setProperty('--arrival-delay', `${index * 55}ms`);
     const link = element('a', 'shortcut-link'); link.href = shortcut.url;
     link.title = shortcut.url;
-    const icon = element('span', 'shortcut-icon', shortcut.name.slice(0, 1).toUpperCase()); icon.setAttribute('aria-hidden', 'true');
+    const icon = createSiteIcon(shortcut.url, shortcut.name, 'shortcut-icon');
     link.append(icon, element('span', 'shortcut-name', shortcut.name));
     tile.append(link);
     if (!frequent) {
@@ -79,6 +94,7 @@ export function renderStandard(state) {
     add.addEventListener('click', () => openShortcut()); tiles.push(add);
   }
   $('shortcuts-grid').replaceChildren(...tiles);
+  firstRender = false;
 }
 
 export function setupStandard(handlers) {
@@ -95,7 +111,7 @@ export function setupStandard(handlers) {
     event.preventDefault();
     try {
       const url = shortcutURL($('shortcut-url').value);
-      if (await actions.mutate({ type: 'shortcut-save', id: editingId, name: $('shortcut-name').value, url }, 'ショートカットを保存しました')) $('shortcut-dialog').close();
+      if (await actions.mutate({ type: 'shortcut-save', id: editingId, name: $('shortcut-name').value, url, groupId: $('shortcut-group').value }, 'ショートカットを保存しました')) $('shortcut-dialog').close();
     } catch (error) { $('shortcut-error').textContent = error.message; }
   });
   $('shortcut-delete').addEventListener('click', async () => {
@@ -105,7 +121,7 @@ export function setupStandard(handlers) {
       if (deleted) {
         const undo = element('button', 'undo-button', '元に戻す');
         undo.addEventListener('click', async () => {
-          if (undoShortcut && await actions.mutate({ type: 'shortcut-save', name: undoShortcut.name, url: undoShortcut.url }, 'ショートカットを戻しました')) undoShortcut = null;
+          if (undoShortcut && await actions.mutate({ type: 'shortcut-save', name: undoShortcut.name, url: undoShortcut.url, groupId: undoShortcut.groupId }, 'ショートカットを戻しました')) undoShortcut = null;
         });
         $('toast').append(' ', undo);
       }
@@ -114,6 +130,7 @@ export function setupStandard(handlers) {
   for (const [id, key] of [['theme-select','theme'],['backdrop-select','backdrop'],['shortcut-mode','shortcutMode']])
     $(id).addEventListener('change', () => actions.mutate({ type: 'appearance', values: { [key]: $(id).value, ...(key === 'backdrop' ? { image: '' } : {}) } }));
   $('show-shortcuts').addEventListener('change', () => actions.mutate({ type: 'appearance', values: { showShortcuts: $('show-shortcuts').checked } }));
+  $('show-motion').addEventListener('change', () => actions.mutate({ type: 'appearance', values: { motion: $('show-motion').checked } }));
   $('background-clear').addEventListener('click', () => actions.mutate({ type: 'appearance', values: { image: '' } }, '背景画像を削除しました'));
   $('appearance-reset').addEventListener('click', () => actions.mutate({ type: 'appearance', values: defaultAppearance() }, '見た目を標準に戻しました'));
   $('background-file').addEventListener('change', async event => {
@@ -130,4 +147,11 @@ export function setupStandard(handlers) {
     finally { event.target.value = ''; }
   });
   darkPreference.addEventListener('change', () => { if (currentState) applyAppearance(currentState.appearance); });
+  const updateVisibility = () => { document.documentElement.dataset.pageHidden = String(document.hidden); };
+  document.addEventListener('visibilitychange', updateVisibility);
+  updateVisibility();
+  // Keep already-open tabs current without rebuilding cards or losing focus.
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && currentState) applyAppearance(currentState.appearance);
+  }, 60_000);
 }

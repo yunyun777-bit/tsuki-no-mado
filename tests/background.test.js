@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createBackup } from '../backup.js';
 
 function event() {
   const listeners = [];
@@ -88,6 +89,29 @@ test('background worker respects permissions, persistence and deletion boundarie
     assert.equal(result.learning, false);
     assert.equal(result.sites['https://paused.test'], undefined);
     assert.ok(result.sites['https://history.test']);
+  });
+  await t.test('new preferences persist without history permission; failed restore leaves storage intact', async () => {
+    const original = createBackup(await state());
+    const group = (await send({ type: 'group-save', name: '仕事' })).state.activeGroup;
+    await send({ type: 'shortcut-save', url: 'https://docs.test/project', groupId: group });
+    await send({ type: 'daily-note', text: '作業を続ける' });
+    await send({ type: 'appearance', values: { recommendCount: 4, collapsePins: true } });
+    await send({ type: 'snooze', origin: 'https://history.test', duration: 'week' });
+    const saved = await state();
+    assert.equal(saved.dailyNote, '作業を続ける');
+    assert.equal(saved.activeGroup, group);
+    assert.equal(saved.shortcuts[0].groupId, group);
+    assert.equal(saved.appearance.recommendCount, 4);
+    assert.ok(saved.snoozed['https://history.test'] > now);
+    assert.equal(chrome.history, undefined);
+    const before = structuredClone(database);
+    const broken = createBackup(saved); broken.settings.shortcuts[0].url = 'javascript:alert(1)';
+    assert.ok((await send({ type: 'backup-restore', backup: broken })).error);
+    assert.deepEqual(database, before);
+    await send({ type: 'backup-restore', backup: original });
+    assert.equal((await state()).learning, false);
+    assert.deepEqual((await state()).sites['https://history.test'].visits, saved.sites['https://history.test'].visits);
+    await send({ type: 'unsnooze', origin: 'https://history.test' });
   });
   await t.test('history deletion clears derived visits while retaining pinned sites', async () => {
     permission = true;

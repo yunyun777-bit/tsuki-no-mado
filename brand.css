@@ -1,0 +1,5 @@
+/* Display the approved artwork without its outer transparent margins. */
+.brand{flex:none;gap:8px;letter-spacing:normal}
+.brand-logo{display:block;width:160px;height:auto;aspect-ratio:1370/530;flex:none}
+:root[data-theme=dark] .brand-logo{filter:brightness(0) invert(1);opacity:.94}
+@media(max-width:600px){.brand-logo{width:110px}}

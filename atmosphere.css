@@ -1,0 +1,63 @@
+body[data-backdrop=time]:not(.has-wallpaper){
+  background:radial-gradient(ellipse at 78% 4%,#fff2,transparent 48%),linear-gradient(155deg,var(--sky-top),var(--sky-middle) 58%,var(--sky-bottom));
+  background-attachment:fixed;
+}
+body[data-backdrop=time]:not(.has-wallpaper) .site-card{background:var(--surface)}
+.hero-note{display:grid;place-items:center;width:130px;height:112px;transform:none;margin-right:18px;flex:none}
+.moon-illustration{width:120px;height:120px;overflow:visible;filter:drop-shadow(0 0 18px #f2d7a53b)}
+.moon-halo{fill:none;stroke:#fff6;stroke-width:.7}
+.moon-shadow{fill:#576585;stroke:#f6e6bd55;stroke-width:.6}
+.moon-light{fill:#fff1cb}
+.moon-crater{fill:#c1a977;opacity:.18}
+.moon-star{fill:none;stroke:var(--ink);stroke-width:1;opacity:.35;stroke-linecap:round}
+.site-card,.shortcut-tile{transition:transform 180ms ease,box-shadow 180ms ease,border-color 180ms ease}
+.site-icon,.shortcut-icon{transition:box-shadow 180ms ease,transform 180ms ease}
+.site-card:focus-within,.shortcut-tile:focus-within{box-shadow:0 5px 18px #1d355b1a}
+.site-card:focus-within .site-icon,.shortcut-tile:focus-within .shortcut-icon{box-shadow:0 0 0 4px #ddbb742b}
+@media(hover:hover) and (pointer:fine){
+  .site-card:hover,.shortcut-tile:hover{transform:translateY(-3px);box-shadow:0 7px 22px #1d355b1a}
+  .site-card:hover .site-icon,.shortcut-tile:hover .shortcut-icon{box-shadow:0 0 0 4px #ddbb742b;transform:scale(1.04)}
+  .site-card:active,.shortcut-tile:active{transform:translateY(-1px)}
+}
+@media(max-width:600px){.hero{min-height:90px;gap:10px}.hero-note{display:grid;width:80px;height:80px;margin-right:0}.moon-illustration{width:80px;height:80px}.eyebrow{font-size:11px;letter-spacing:.6px}}
+@media(prefers-reduced-motion:reduce){
+  .site-card,.shortcut-tile,.site-icon,.shortcut-icon{transition:none!important;animation:none!important}
+  .site-card:hover,.site-card:active,.shortcut-tile:hover,.shortcut-tile:active,.site-card:hover .site-icon,.shortcut-tile:hover .shortcut-icon{transform:none!important}
+}
+
+/* Decorative layers never intercept input or change the content layout. */
+body{isolation:isolate}
+.app{position:relative;z-index:1}
+.sky-motion{display:none;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+body[data-motion=on][data-backdrop=time]:not(.has-wallpaper) .sky-motion{display:block}
+.sky-glow{position:absolute;width:85vmax;height:65vmax;border-radius:50%;opacity:.65}
+.glow-one{top:-38%;left:-24%;background:radial-gradient(ellipse,#a2d9f288,transparent 65%);animation:sky-drift 16s ease-in-out infinite alternate}
+.glow-two{right:-25%;bottom:-55%;background:radial-gradient(ellipse,#ffd0b488,transparent 65%);animation:sky-drift 22s ease-in-out -8s infinite alternate-reverse}
+.sky-stars{position:absolute;inset:-7%;color:#82709670;background-image:radial-gradient(circle at 12% 14%,currentColor 1px,transparent 2px),radial-gradient(circle at 28% 34%,currentColor 1.5px,transparent 2.5px),radial-gradient(circle at 81% 13%,currentColor 1px,transparent 2px),radial-gradient(circle at 91% 38%,currentColor 1.5px,transparent 2.5px),radial-gradient(circle at 7% 66%,currentColor 1px,transparent 2px),radial-gradient(circle at 78% 72%,currentColor 1px,transparent 2px),radial-gradient(circle at 39% 88%,currentColor 1.5px,transparent 2.5px),radial-gradient(circle at 62% 8%,currentColor 1px,transparent 2px);animation:star-drift 26s ease-in-out infinite alternate,star-breathe 5s ease-in-out infinite}
+:root[data-theme=dark] .sky-stars{color:#fff3d7b3}
+:root[data-theme=dark] .glow-one{background:radial-gradient(ellipse,#7b96e055,transparent 65%)}
+:root[data-theme=dark] .glow-two{background:radial-gradient(ellipse,#b58ac94d,transparent 65%)}
+.shooting-star{position:absolute;width:120px;height:2px;border-radius:50%;opacity:0;background:linear-gradient(90deg,transparent,#ad8d55);transform:rotate(22deg);animation:shooting-pass 14s linear 2s infinite}
+.shooting-one{top:14%;left:6%}
+.shooting-two{top:34%;left:55%;width:85px;animation-duration:23s;animation-delay:9s}
+:root[data-theme=dark] .shooting-star{background:linear-gradient(90deg,transparent,#fff2c7)}
+body[data-motion=on] .moon-illustration{animation:moon-float 6s ease-in-out infinite}
+body[data-motion=on] .moon-halo{transform-origin:60px 60px;animation:moon-breathe 4s ease-in-out infinite}
+body[data-motion=on] .moon-star{animation:star-breathe 3.5s ease-in-out -.7s infinite}
+body[data-motion=on] .arrive .site-link,
+body[data-motion=on] .arrive .shortcut-link{animation:card-arrival 480ms ease-out var(--arrival-delay,0ms) backwards}
+:root[data-page-hidden=true] .sky-motion *,
+:root[data-page-hidden=true] .moon-illustration,
+:root[data-page-hidden=true] .moon-illustration *{animation-play-state:paused!important}
+@keyframes sky-drift{from{transform:translate(-3%,2%) scale(1)}to{transform:translate(12%,-8%) scale(1.15)}}
+@keyframes star-drift{from{transform:translate(-12px,0)}to{transform:translate(20px,-26px)}}
+@keyframes star-breathe{0%,100%{opacity:.25}50%{opacity:.85}}
+@keyframes moon-float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+@keyframes moon-breathe{0%,100%{opacity:.35;transform:scale(.96)}50%{opacity:.9;transform:scale(1.05)}}
+@keyframes shooting-pass{0%{opacity:0;transform:translate(0,0) rotate(22deg)}2%{opacity:.8}9%,100%{opacity:0;transform:translate(340px,138px) rotate(22deg)}}
+@keyframes card-arrival{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.sky-glow{opacity:.45}.shooting-two{display:none}}
+@media(prefers-reduced-motion:reduce){
+  body[data-motion=on][data-backdrop=time]:not(.has-wallpaper) .sky-motion{display:none}
+  .moon-illustration,.moon-illustration *,body[data-motion=on] .arrive .site-link,body[data-motion=on] .arrive .shortcut-link{animation:none!important;transform:none!important}
+}

@@ -10,6 +10,7 @@ const dist = path.join(root, 'dist');
 await mkdir(dist, { recursive: true });
 const destination = await mkdtemp(path.join(dist, `tsuki-no-mado-${manifest.version}-`));
 for (const name of [...runtimeFiles, 'LICENSE', 'PRIVACY.md']) {
+  await mkdir(path.dirname(path.join(destination, name)), { recursive: true });
   await copyFile(path.join(root, name), path.join(destination, name));
 }
 await checkBundle(destination);

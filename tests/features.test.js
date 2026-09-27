@@ -59,3 +59,15 @@ test('appearance rejects external or executable image URLs and oversized backgro
   editState(state, { type: 'appearance', values: defaultAppearance() });
   assert.deepEqual(state.appearance, defaultAppearance());
 });
+
+test('motion can be disabled without replacing a saved background or image', () => {
+  const state = emptyState();
+  editState(state, { type: 'appearance', values: { backdrop: 'forest', image: 'data:image/png;base64,AAAA' } });
+  editState(state, { type: 'appearance', values: { motion: false } });
+  normalizeFeatures(state);
+  assert.equal(state.appearance.motion, false);
+  assert.equal(state.appearance.backdrop, 'forest');
+  assert.equal(state.appearance.image, 'data:image/png;base64,AAAA');
+  editState(state, { type: 'appearance', values: { motion: true } });
+  assert.equal(state.appearance.motion, true);
+});
