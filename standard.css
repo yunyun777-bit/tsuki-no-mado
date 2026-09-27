@@ -14,5 +14,87 @@ dialog{background:var(--modal);color:var(--ink)}.text-input{background:var(--sur
 .toolbar .filter input{font-size:12px}
 .toolbar>.button{margin-left:auto;min-height:40px;padding:9px 14px}
 @media(max-width:600px){.toolbar{flex-wrap:nowrap}.toolbar .filter{flex:1 1 0;max-width:65%}.toolbar>.button{flex:none;white-space:nowrap;font-size:11px;padding:9px 10px}}
-.note-form{margin:22px 0;color:var(--ink)}.note-form>label{display:block;font-size:12px;margin-bottom:8px}.inline-controls{display:flex;gap:8px;align-items:center}.inline-controls input{min-width:0;flex:1}.note-form .small{display:block;margin-top:6px}.group-controls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:22px 0 5px}.group-controls>label{font-size:11px;color:var(--muted)}.group-controls select{width:auto;max-width:210px;min-width:110px}.group-controls .button{padding:8px 12px}.section-toggle{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 10px;border-radius:8px;font-size:11px}.snoozed-row{display:flex;gap:10px;justify-content:space-between;align-items:center;margin:12px 0;font-size:12px}.snoozed-row span{overflow-wrap:anywhere}.snoozed-row button{flex:none}#snoozed-list{font-size:12px;color:var(--muted)}select{font:inherit}select:focus-visible{outline:3px solid #4c9d82;outline-offset:3px}#snooze-site{overflow-wrap:anywhere}
-@media(max-width:600px){.group-controls>label{flex-basis:100%;text-align:center}.group-controls select{max-width:140px}.group-controls .button{font-size:11px;padding:8px}.note-form .inline-controls .button{flex:none}.card-tools{top:10px;right:5px}.card-tool{width:26px}.section-heading{gap:8px}.section-toggle{flex:none}}
+.group-controls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:22px 0 5px}.group-controls>label{font-size:11px;color:var(--muted)}.group-controls select{width:auto;max-width:210px;min-width:110px}.group-controls .button{padding:8px 12px}.section-toggle{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 10px;border-radius:8px;font-size:11px}.snoozed-row{display:flex;gap:10px;justify-content:space-between;align-items:center;margin:12px 0;font-size:12px}.snoozed-row span{overflow-wrap:anywhere}.snoozed-row button{flex:none}#snoozed-list{font-size:12px;color:var(--muted)}select{font:inherit}select:focus-visible{outline:3px solid #4c9d82;outline-offset:3px}#snooze-site{overflow-wrap:anywhere}
+@media(max-width:600px){.group-controls>label{flex-basis:100%;text-align:center}.group-controls select{max-width:140px}.group-controls .button{font-size:11px;padding:8px}.card-tools{top:10px;right:5px}.card-tool{width:26px}.section-heading{gap:8px}.section-toggle{flex:none}}
+
+/* A quiet launcher expands into a spacious editor; closed notes consume one row. */
+.note-area{margin:18px 0}.note-launcher{display:flex;align-items:center;gap:14px;width:100%;min-height:44px;padding:10px 14px;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}.note-launcher:hover{background:var(--hover)}.note-label{font-size:12px;font-weight:600;flex:none}#note-preview{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)}#note-indicator{flex:none;font-size:11px;color:var(--muted)}
+dialog.note-dialog{width:calc(100vw - 48px);max-width:1600px;height:calc(100dvh - 48px);max-height:none;padding:28px 32px;overflow:hidden}.note-editor{display:flex;flex-direction:column;height:100%;gap:20px}.note-description{margin:8px 0 0}.note-editor textarea{flex:1;min-height:0;width:100%;resize:none;padding:24px;border-color:var(--line);background:var(--field);font:inherit;font-size:17px;line-height:1.85;tab-size:4;white-space:pre-wrap;overflow-wrap:anywhere}.note-editor textarea:focus-visible{outline:2px solid #76a993;outline-offset:2px}.note-footer{display:flex;gap:16px;align-items:center;justify-content:space-between}.note-feedback{min-width:0;display:flex;flex-direction:column;gap:4px}.note-feedback .error{margin:0;min-height:0}.note-footer>.button{flex:none;min-width:100px}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:600px){dialog.note-dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);padding:18px 16px;border-radius:14px}.note-editor{gap:14px}.note-editor textarea{padding:14px;font-size:16px}.note-description{font-size:11px}.note-launcher{gap:10px}.note-footer{gap:10px}.note-footer>.button{min-width:72px}.note-feedback .muted{font-size:11px}}
+/* Every dialog grows from its initiating control and returns there on close. */
+.dialog-origin-hidden{visibility:hidden}
+dialog{transform-origin:top left}
+dialog:focus{outline:none}
+dialog[data-transition]{will-change:transform,border-radius;overflow:hidden}
+dialog[data-transition]>*{pointer-events:none}
+dialog[data-transition=opening]::backdrop{animation:dialog-backdrop-in var(--dialog-duration,180ms) ease both}
+dialog[data-transition=closing]::backdrop{animation:dialog-backdrop-in var(--dialog-duration,140ms) ease reverse both}
+@keyframes dialog-backdrop-in{from{background-color:#223b3800;backdrop-filter:blur(0)}to{background-color:#223b3855;backdrop-filter:blur(3px)}}
+@media(prefers-reduced-motion:reduce){dialog::backdrop{animation:none!important}}
+
+/* Keep destinations close to search, including on laptop-height windows. */
+.topbar{height:72px}
+.routes-section{margin:0 0 20px}
+.route-heading{display:flex;align-items:center;gap:10px;margin-bottom:10px;min-width:0}
+.route-heading h2{font-size:14px;margin:0 auto 0 0}
+.route-heading label{font-size:11px;color:var(--muted);flex:none}
+.route-heading select{width:auto;max-width:55%;min-width:0;padding:7px 10px;font-size:12px}
+.route-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.route-link{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
+.route-link:hover{background:var(--hover)}
+.route-icon{display:grid;place-items:center;width:28px;height:28px;flex:none;color:var(--ink)}
+.route-text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.route-text strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.route-text>span{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+@media(max-width:600px){.route-heading{flex-wrap:wrap}.route-heading h2{flex-basis:100%}.route-heading select{max-width:calc(100% - 40px);flex:1}.route-grid{grid-template-columns:minmax(0,1fr)}}
+main{padding-top:16px}
+.demo-banner{margin-bottom:12px}
+.hero{min-height:56px;margin-bottom:8px}
+.eyebrow{margin:0}
+.standard-section{margin-bottom:14px}
+.web-search{min-height:52px}
+.search-note{margin:5px 0 8px}
+.note-area{margin:10px 0}
+.group-controls{margin:10px 0 0}
+.group-controls select{padding:8px 10px}
+.group-controls .button{min-height:36px;padding:7px 10px}
+.shortcuts-grid{margin-top:8px}
+.shortcut-link,.shortcut-add{gap:6px;padding:10px 8px 8px}
+.shortcut-icon{width:36px;height:36px;font-size:17px}
+.toolbar{margin-bottom:18px}
+.sites-section{margin-bottom:20px}
+.section-heading{margin-bottom:10px}
+.section-heading h2{flex-wrap:wrap;gap:6px 9px}
+.section-heading .section-caption{font-weight:400;color:var(--muted)}
+.destinations .site-link{padding:16px}
+.destinations .site-top{margin-bottom:10px}
+.destinations .site-reason{margin-top:10px}
+#pinned .site-link{display:grid;grid-template-columns:32px minmax(0,1fr);gap:4px 10px;align-items:center;padding:12px 16px}
+#pinned .site-top{grid-row:1 / 3;margin:0}
+#pinned .site-icon{width:32px;height:32px;border-radius:10px}
+#pinned .site-title{margin:0;padding:0;font-size:13px}
+#pinned .site-domain{grid-column:2}
+#pinned .site-arrow,#pinned .site-reason,#pinned .pinned-badge{display:none}
+#pinned .card-tools{top:7px;right:7px}
+@media(min-width:1000px){
+  .destinations{display:grid;grid-template-columns:minmax(210px,1fr) minmax(0,3fr);gap:24px;align-items:start}
+  .destinations:has(#pinned-section[hidden]){grid-template-columns:minmax(0,1fr)}
+  #pinned{grid-template-columns:minmax(0,1fr)}
+  .destinations #recommended{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .destinations:has(#pinned-section[hidden]) #recommended{grid-template-columns:repeat(4,minmax(0,1fr))}
+  #pinned-section .section-caption{display:none}
+}
+@media(max-width:850px){
+  #pinned .site-link{padding-top:38px}
+  .shortcut-link,.shortcut-add{padding-top:32px}
+}
+@media(max-width:600px){
+  .topbar{height:64px}
+  main{padding-top:12px}
+  .group-controls>label{flex-basis:auto}
+  .group-controls{gap:6px}
+  .group-controls select{min-width:90px;max-width:120px}
+  .group-controls .button{padding:7px 8px}
+  .section-heading .section-caption{display:none}
+  .toolbar .filter{max-width:none}
+}

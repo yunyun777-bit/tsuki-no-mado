@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyState, editState, recordVisit, rankSites, prune, DAY } from '../model.js';
-import { normalizeFeatures } from '../features.js';
+import { normalizeFeatures, NOTE_LIMIT } from '../features.js';
 import { createBackup, validateBackup } from '../backup.js';
 
 test('migration preserves existing shortcuts, wallpaper, history and preferences', () => {
@@ -103,7 +103,7 @@ test('invalid backups cannot partially change live state or inject unsupported f
     b => b.settings.appearance.recommendCount = 100,
     b => b.settings.appearance.motion = 'false',
     b => b.settings.pins = ['https://example.com/secret'],
-    b => b.settings.dailyNote = 'a\nb',
+    b => b.settings.dailyNote = 'a'.repeat(NOTE_LIMIT + 1),
   ]) {
     const backup = createBackup(state); corrupt(backup);
     assert.throws(() => editState(state, { type: 'backup-restore', backup }));
@@ -117,11 +117,29 @@ test('invalid backups cannot partially change live state or inject unsupported f
 test('note and display preferences validate without changing other saved data', () => {
   const state = emptyState();
   editState(state, { type: 'daily-note', text: '  原稿を書く  ' });
-  assert.equal(state.dailyNote, '原稿を書く');
-  assert.throws(() => editState(state, { type: 'daily-note', text: 'a'.repeat(161) }));
+  assert.equal(state.dailyNote, '  原稿を書く  ');
+  assert.throws(() => editState(state, { type: 'daily-note', text: 'a'.repeat(NOTE_LIMIT + 1) }));
   editState(state, { type: 'appearance', values: { recommendCount: 8, showNote: false } });
-  assert.equal(state.dailyNote, '原稿を書く');
+  assert.equal(state.dailyNote, '  原稿を書く  ');
   assert.equal(state.appearance.recommendCount, 8);
   editState(state, { type: 'daily-note', text: '' });
   assert.equal(state.dailyNote, '');
+});
+
+
+test('expanded memo preserves multiline whitespace, accepts the limit and round-trips through backups', () => {
+  const state = emptyState();
+  state.dailyNote = '以前の一行メモ';
+  normalizeFeatures(state);
+  assert.equal(state.dailyNote, '以前の一行メモ');
+  const text = '  見出し\n\n    インデントを残す\n最後の行\n';
+  editState(state, { type: 'daily-note', text });
+  assert.equal(state.dailyNote, text);
+  const target = emptyState();
+  editState(target, { type: 'backup-restore', backup: createBackup(state) });
+  assert.equal(target.dailyNote, text);
+  editState(state, { type: 'daily-note', text: 'あ'.repeat(NOTE_LIMIT) });
+  assert.equal(state.dailyNote.length, NOTE_LIMIT);
+  assert.throws(() => editState(state, { type: 'daily-note', text: 'あ'.repeat(NOTE_LIMIT + 1) }));
+  assert.equal(state.dailyNote.length, NOTE_LIMIT);
 });

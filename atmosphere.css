@@ -3,8 +3,8 @@ body[data-backdrop=time]:not(.has-wallpaper){
   background-attachment:fixed;
 }
 body[data-backdrop=time]:not(.has-wallpaper) .site-card{background:var(--surface)}
-.hero-note{display:grid;place-items:center;width:130px;height:112px;transform:none;margin-right:18px;flex:none}
-.moon-illustration{width:120px;height:120px;overflow:visible;filter:drop-shadow(0 0 18px #f2d7a53b)}
+.hero-note{display:grid;place-items:center;width:68px;height:56px;transform:none;margin-right:10px;flex:none}
+.moon-illustration{width:68px;height:68px;overflow:visible;filter:drop-shadow(0 0 18px #f2d7a53b)}
 .moon-halo{fill:none;stroke:#fff6;stroke-width:.7}
 .moon-shadow{fill:#576585;stroke:#f6e6bd55;stroke-width:.6}
 .moon-light{fill:#fff1cb}
@@ -19,7 +19,7 @@ body[data-backdrop=time]:not(.has-wallpaper) .site-card{background:var(--surface
   .site-card:hover .site-icon,.shortcut-tile:hover .shortcut-icon{box-shadow:0 0 0 4px #ddbb742b;transform:scale(1.04)}
   .site-card:active,.shortcut-tile:active{transform:translateY(-1px)}
 }
-@media(max-width:600px){.hero{min-height:90px;gap:10px}.hero-note{display:grid;width:80px;height:80px;margin-right:0}.moon-illustration{width:80px;height:80px}.eyebrow{font-size:11px;letter-spacing:.6px}}
+@media(max-width:600px){.hero{min-height:44px;gap:10px}.hero-note{display:grid;width:52px;height:44px;margin-right:0}.moon-illustration{width:52px;height:52px}.eyebrow{font-size:11px;letter-spacing:.6px}}
 @media(prefers-reduced-motion:reduce){
   .site-card,.shortcut-tile,.site-icon,.shortcut-icon{transition:none!important;animation:none!important}
   .site-card:hover,.site-card:active,.shortcut-tile:hover,.shortcut-tile:active,.site-card:hover .site-icon,.shortcut-tile:hover .shortcut-icon{transform:none!important}
@@ -60,4 +60,63 @@ body[data-motion=on] .arrive .shortcut-link{animation:card-arrival 480ms ease-ou
 @media(prefers-reduced-motion:reduce){
   body[data-motion=on][data-backdrop=time]:not(.has-wallpaper) .sky-motion{display:none}
   .moon-illustration,.moon-illustration *,body[data-motion=on] .arrive .site-link,body[data-motion=on] .arrive .shortcut-link{animation:none!important;transform:none!important}
+}
+
+/* Shared feedback also covers buttons created after a render and native file pickers. */
+:root{--button-glow:#4c9d8233;--button-shadow:#233f3626}
+:root[data-theme=dark]{--button-glow:#91d2b64d;--button-shadow:#0005}
+.danger{--button-glow:#b7644933}
+:is(button,a.icon-button,.lens-link,.apps-grid a){
+  -webkit-tap-highlight-color:transparent;
+  transform-origin:center;
+}
+button.shortcut-tile{transform:none}
+input[type=file]::file-selector-button{
+  font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);
+  border-radius:8px;padding:9px 12px;margin-right:10px;cursor:pointer;
+}
+body[data-motion=on] :is(button,a.icon-button,.lens-link,.apps-grid a),
+body[data-motion=on] input[type=file]::file-selector-button{
+  transition:translate 170ms ease,scale 140ms ease,box-shadow 200ms ease,
+    background-color 180ms ease,border-color 180ms ease,color 180ms ease,filter 170ms ease;
+}
+@media(hover:hover) and (pointer:fine){
+  body[data-motion=on] :is(button,a.icon-button,.lens-link,.apps-grid a):not(:disabled):not([aria-disabled=true]):hover,
+  body[data-motion=on] input[type=file]:not(:disabled)::file-selector-button:hover{
+    translate:0 -2px;
+    box-shadow:0 5px 12px var(--button-shadow);
+    filter:brightness(1.06);
+  }
+}
+body[data-motion=on] :is(button,a.icon-button,.lens-link,.apps-grid a):not(:disabled):not([aria-disabled=true]):focus-visible{
+  box-shadow:0 0 0 4px var(--button-glow);
+  animation:button-focus-in 260ms ease-out;
+}
+body[data-motion=on] input[type=file]:focus-visible::file-selector-button{
+  box-shadow:0 0 0 4px var(--button-glow);
+}
+body[data-motion=on] :is(button,a.icon-button,.lens-link,.apps-grid a):not(:disabled):not([aria-disabled=true]):active,
+body[data-motion=on] input[type=file]:not(:disabled)::file-selector-button:active{
+  translate:0 1px;scale:.96;filter:brightness(.98);
+  box-shadow:0 1px 3px var(--button-shadow);animation:none;
+  transition-duration:65ms;
+}
+@keyframes button-focus-in{
+  from{box-shadow:0 0 0 0 var(--button-glow)}
+  to{box-shadow:0 0 0 4px var(--button-glow)}
+}
+/* Keep disabled controls still and preserve outlines even when motion is off. */
+body :is(button,a.icon-button,.lens-link,.apps-grid a):is(:disabled,[aria-disabled=true]),
+body input[type=file]:disabled::file-selector-button,
+body[data-motion=off] :is(button,a.icon-button,.lens-link,.apps-grid a),
+body[data-motion=off] .shortcut-add .shortcut-icon,
+body[data-motion=off] input[type=file]::file-selector-button{
+  translate:none;scale:none;transform:none;animation:none;transition:none;filter:none;
+}
+@media(prefers-reduced-motion:reduce){
+  body :is(button,a.icon-button,.lens-link,.apps-grid a),
+  body input[type=file]::file-selector-button{
+    translate:none!important;scale:none!important;transform:none!important;
+    animation:none!important;transition:none!important;
+  }
 }

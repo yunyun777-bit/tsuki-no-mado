@@ -1,6 +1,6 @@
 import { normalizeFeatures, editFeatures, shortcutURL } from './features.js';
 
-export const BACKUP_LIMIT = 3_000_000;
+export const BACKUP_LIMIT = 4_000_000;
 export function createBackup(state) {
   const copy = normalizeFeatures(structuredClone(state));
   return { format: 'tsuki-no-mado-settings', version: 1, settings: {

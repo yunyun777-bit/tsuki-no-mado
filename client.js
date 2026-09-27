@@ -1,5 +1,6 @@
 import { emptyState, recordVisit, editState, DAY } from './model.js';
 import { searchAction } from './features.js';
+import { recordNavigation, clearNavigationContext } from './navigation.js';
 
 export const isPreview = !globalThis.chrome?.runtime?.id;
 let demo = emptyState();
@@ -17,6 +18,13 @@ if (isPreview) {
   }
   demo.pins = ['https://github.com', 'https://www.notion.so'];
   demo.learning = true;
+  for (let day = 3; day >= 0; day--) {
+    const time = now - day * DAY - 120_000;
+    recordNavigation(demo, { url: 'https://github.com', visitId: `github-${day}`, visitTime: time, transition: 'typed' }, now);
+    recordNavigation(demo, { url: 'https://developer.mozilla.org', visitId: `mdn-${day}`, referringVisitId: `github-${day}`, visitTime: time + 30_000, transition: 'link' }, now);
+    recordNavigation(demo, { url: 'https://zenn.dev', visitId: `zenn-${day}`, referringVisitId: `github-${day}`, visitTime: time + 60_000, transition: 'link' }, now);
+  }
+  recordNavigation(demo, { url: 'https://github.com', visitId: 'github-now', visitTime: now, transition: 'typed' }, now);
   demo.shortcuts = [
     { id: 'demo-mail', name: 'Gmail', url: 'https://mail.google.com/mail/u/0/' },
     { id: 'demo-drive', name: 'Google Drive', url: 'https://drive.google.com/drive/my-drive' },
@@ -31,8 +39,9 @@ export async function command(message) {
     return response.state;
   }
   if (message.type === 'reset') demo = emptyState();
-  else if (message.type === 'pause') demo.learning = false;
+  else if (message.type === 'pause') { demo.learning = false; clearNavigationContext(demo); }
   else if (message.type === 'enable') demo.learning = true;
+  else if (message.type === 'navigation-import') { demo.navigation ||= { edges: [], recent: [] }; demo.navigation.importedAt = Date.now(); delete demo.navigation.importFailed; }
   else if (message.type !== 'get') editState(demo, message);
   return structuredClone(demo);
 }

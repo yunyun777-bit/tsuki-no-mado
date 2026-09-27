@@ -1,5 +1,6 @@
 import { normalizeFeatures, editFeatures } from './features.js';
 import { restoreBackup } from './backup.js';
+import { pruneNavigation } from './navigation.js';
 export const DAY = 86_400_000;
 export const MAX_SITES = 300;
 export const RETENTION_DAYS = 90;
@@ -29,6 +30,7 @@ export function prune(state, now = Date.now()) {
   while (Object.keys(state.sites).length > MAX_SITES && removable.length) {
     delete state.sites[removable.shift().origin];
   }
+  pruneNavigation(state, now);
   return state;
 }
 

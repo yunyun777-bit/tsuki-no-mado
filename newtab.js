@@ -1,8 +1,10 @@
+import { openDialog, closeDialog, replaceDialog } from './dialogs.js';
 import { rankSites, siteOrigin } from './model.js';
 import { command, requestHistory, isPreview } from './client.js';
 import { setupStandard, renderStandard } from './standard.js';
 import { setupWorkspace, renderWorkspace, openSnooze } from './workspace.js';
 import { createSiteIcon } from './icons.js';
+import { navigationSource, rankNextSites, CONTEXT_AGE } from './navigation.js';
 
 const $ = id => document.getElementById(id);
 let state;
@@ -10,6 +12,45 @@ let busy = false;
 let toastTimer;
 let firstRender = true;
 let snoozeTimer;
+let selectedSource = '';
+
+function siteLabel(origin) {
+  const host = new URL(origin).hostname;
+  return displayNames[host] || host.replace(/^www\./, '');
+}
+
+function renderNavigation(ranked, matches) {
+  const origins = new Set(ranked.map(site => site.origin));
+  const sources = [...new Set((state.navigation?.edges || []).map(edge => edge.from))]
+    .filter(origin => origins.has(origin)).sort((a, b) => siteLabel(a).localeCompare(siteLabel(b), 'ja'));
+  if (!sources.includes(selectedSource)) selectedSource = '';
+  const select = $('route-source');
+  const automatic = navigationSource(state);
+  const option = node('option', '', automatic ? `最近の訪問：${siteLabel(automatic)}` : '起点サイトを選んでください');
+  option.value = '';
+  select.replaceChildren(option, ...sources.map(origin => {
+    const item = node('option', '', siteLabel(origin)); item.value = origin; return item;
+  }));
+  select.value = selectedSource;
+  const source = selectedSource || automatic;
+  const candidates = rankNextSites(state, source, ranked).filter(matches).slice(0, 3);
+  $('next-sites').replaceChildren(...candidates.map(site => {
+    const link = node('a', 'route-link'); link.href = site.origin;
+    const text = node('span', 'route-text');
+    text.append(node('strong', '', siteLabel(site.origin)), node('span', '', site.reason));
+    link.append(createSiteIcon(site.origin, siteLabel(site.origin), 'route-icon'), text, node('span', '', '↗'));
+    return link;
+  }));
+  $('routes-section').hidden = false;
+  select.disabled = sources.length === 0;
+  $('route-retry').hidden = !state.learning || !state.navigation?.importFailed;
+  $('routes-empty').hidden = candidates.length > 0;
+  $('routes-empty').textContent = state.learning && state.navigation?.importFailed
+    ? '履歴から経路を読み込めませんでした。「再読み込み」でやり直せます。'
+    : sources.length === 0
+      ? state.learning ? 'サイト間のつながりを収集中です。移動の記録が集まると、ここに候補が表示されます。' : '履歴からの学習を有効にすると、サイト間の移動先を表示できます。'
+      : source ? 'この起点・絞り込みに合う移動先はまだありません。' : '起点を選ぶと、これまでの移動から候補を表示します。';
+}
 const displayNames = {
   'github.com': 'GitHub', 'developer.mozilla.org': 'MDN Web Docs',
   'www.notion.so': 'Notion', 'notion.so': 'Notion', 'chatgpt.com': 'ChatGPT',
@@ -56,7 +97,7 @@ function siteCard(site, pinned, index) {
   if (!pinned) {
     const snooze = node('button', 'card-tool', '◷');
     snooze.title = '一時非表示'; snooze.setAttribute('aria-label', label + 'を一時非表示');
-    snooze.addEventListener('click', () => openSnooze(site.origin)); controls.prepend(snooze);
+    snooze.addEventListener('click', event => openSnooze(site.origin, event.currentTarget)); controls.prepend(snooze);
   }
   card.append(link, controls);
   if (pinned) card.append(node('span', 'pinned-badge', 'FIXED'));
@@ -70,6 +111,7 @@ function render() {
   const query = $('filter').value.trim().toLowerCase();
   const matches = site => !query || `${site.origin} ${displayNames[new URL(site.origin).hostname] || ''}`.toLowerCase().includes(query);
   const ranked = rankSites(state);
+  renderNavigation(ranked, matches);
   const pins = state.pins.map(origin => ranked.find(site => site.origin === origin)).filter(Boolean).filter(matches);
   const suggestions = ranked.filter(site => !state.pins.includes(site.origin)).filter(matches).slice(0, state.appearance.recommendCount);
   $('pinned').replaceChildren(...pins.map((site, index) => siteCard(site, true, index)));
@@ -86,7 +128,8 @@ function render() {
   $('hidden-count').textContent = `${state.hidden.length}件のサイトをおすすめから除外しています。`;
   $('restore').disabled = state.hidden.length === 0;
   clearTimeout(snoozeTimer);
-  const nextExpiry = Math.min(...Object.values(state.snoozed).filter(until => until > Date.now()));
+  const contextExpiry = (state.navigation?.recent.at(-1)?.time || 0) + CONTEXT_AGE + 1;
+  const nextExpiry = Math.min(...[...Object.values(state.snoozed), contextExpiry].filter(until => until > Date.now()));
   if (Number.isFinite(nextExpiry)) {
     const refresh = () => {
       if (busy) snoozeTimer = setTimeout(refresh, 1000);
@@ -98,7 +141,7 @@ function render() {
 
 function setBusy(value) {
   busy = value; document.body.classList.toggle('busy', value);
-  for (const id of ['enable', 'learning-toggle', 'reset-confirm']) $(id).disabled = value;
+  for (const id of ['enable', 'learning-toggle', 'reset-confirm', 'route-retry']) $(id).disabled = value;
 }
 
 async function mutate(message, success) {
@@ -127,10 +170,12 @@ async function enableLearning() {
   finally { setBusy(false); }
 }
 
-$('add-open').addEventListener('click', () => { $('add-error').textContent = ''; $('add-dialog').showModal(); });
-$('settings-open').addEventListener('click', () => $('settings-dialog').showModal());
-for (const button of document.querySelectorAll('[data-close]')) button.addEventListener('click', () => $(button.dataset.close).close());
+$('add-open').addEventListener('click', () => { $('add-error').textContent = ''; openDialog($('add-dialog'), $('add-open'), { focusTarget: $('site-url') }); });
+$('settings-open').addEventListener('click', () => openDialog($('settings-dialog'), $('settings-open')));
+for (const button of document.querySelectorAll('[data-close]')) button.addEventListener('click', () => closeDialog($(button.dataset.close)));
 $('filter').addEventListener('input', render);
+$('route-source').addEventListener('change', event => { selectedSource = event.target.value; render(); });
+$('route-retry').addEventListener('click', () => mutate({ type: 'navigation-import' }, '履歴から経路を読み込みました'));
 document.addEventListener('keydown', event => {
   if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && !document.querySelector('dialog[open]')) {
     event.preventDefault(); $('web-search').focus();
@@ -139,15 +184,14 @@ document.addEventListener('keydown', event => {
 $('enable').addEventListener('click', enableLearning);
 $('learning-toggle').addEventListener('click', () => state.learning ? mutate({ type: 'pause' }, '学習を停止し、履歴の許可を取り消しました') : enableLearning());
 $('restore').addEventListener('click', () => mutate({ type: 'restore' }, '非表示を解除しました'));
-$('reset-open').addEventListener('click', () => { $('settings-dialog').close(); $('reset-dialog').showModal(); });
-$('reset-confirm').addEventListener('click', async () => { if (await mutate({ type: 'reset' }, 'データを削除しました')) $('reset-dialog').close(); });
+$('reset-open').addEventListener('click', () => { replaceDialog($('settings-dialog'), $('reset-dialog'), $('reset-open')); });
 $('add-form').addEventListener('submit', async event => {
   event.preventDefault();
   let value = $('site-url').value.trim();
   if (!/^[a-z][a-z\d+.-]*:/i.test(value)) value = `https://${value}`;
   const origin = siteOrigin(value);
   if (!origin) { $('add-error').textContent = '有効な http または https のURLを入力してください。'; return; }
-  if (await mutate({ type: 'add', origin }, 'サイトを追加しました')) { $('site-url').value = ''; $('add-dialog').close(); }
+  if (await mutate({ type: 'add', origin }, 'サイトを追加しました')) { $('site-url').value = ''; closeDialog($('add-dialog')); }
 });
 
 function updateDate() {

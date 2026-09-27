@@ -6,8 +6,9 @@ import { brandFiles } from './release.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const port = Number(process.env.PORT || 4173);
-const allowed = new Set(['newtab.html','styles.css','newtab.js','client.js','model.js','features.js', 'backup.js', 'workspace.js','standard.js','standard.css','icons.js','atmosphere.js','atmosphere.css']);
+const allowed = new Set(['newtab.html','styles.css','newtab.js','client.js','model.js','features.js', 'backup.js', 'workspace.js', 'dialogs.js','standard.js','standard.css','icons.js','atmosphere.js','atmosphere.css']);
 allowed.add('brand.css');
+allowed.add('navigation.js');
 for (const name of brandFiles) allowed.add(name);
 const types = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.png':'image/png' };
 http.createServer(async (request, response) => {

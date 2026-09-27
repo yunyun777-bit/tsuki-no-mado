@@ -10,8 +10,8 @@ export const brandFiles = Object.freeze([
 ]);
 // Copy only runtime files. Personal evaluation data and developer files never enter the bundle.
 export const runtimeFiles = Object.freeze([
-  'manifest.json', 'newtab.html', 'styles.css', 'standard.css',
-  'newtab.js', 'standard.js', 'client.js', 'model.js', 'features.js', 'backup.js', 'workspace.js', 'background.js', 'icons.js', 'atmosphere.js', 'atmosphere.css',
+  'manifest.json', 'newtab.html', 'styles.css', 'standard.css', 'navigation.js',
+  'newtab.js', 'standard.js', 'client.js', 'model.js', 'features.js', 'backup.js', 'workspace.js', 'dialogs.js', 'background.js', 'icons.js', 'atmosphere.js', 'atmosphere.css',
   'brand.css', ...brandFiles,
 ]);
 

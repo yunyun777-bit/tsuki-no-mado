@@ -1,3 +1,5 @@
+export const NOTE_LIMIT = 50_000;
+
 export function defaultAppearance() {
   return { theme: 'system', backdrop: 'time', image: '', showShortcuts: true, shortcutMode: 'custom', motion: true, recommendCount: 12, collapsePins: false, collapseRecommended: false, showNote: true };
 }
@@ -62,8 +64,8 @@ export function editFeatures(state, action) {
     return true;
   }
   if (action.type === 'daily-note') {
-    if (typeof action.text !== 'string' || action.text.length > 160 || /[\r\n]/.test(action.text)) throw new Error('メモは160文字以内の一行で入力してください。');
-    state.dailyNote = action.text.trim(); return true;
+    if (typeof action.text !== 'string' || action.text.length > NOTE_LIMIT) throw new Error('メモは50,000文字以内で入力してください。');
+    state.dailyNote = action.text; return true;
   }
   if (action.type === 'shortcut-save') {
     const url = shortcutURL(action.url);

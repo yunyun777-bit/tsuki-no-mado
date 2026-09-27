@@ -1,3 +1,4 @@
+import { openDialog, closeDialog, syncDialogMotion } from './dialogs.js';
 import { defaultAppearance, normalizeFeatures, shortcutURL } from './features.js';
 import { isPreview, searchOrNavigate } from './client.js';
 import { createSiteIcon } from './icons.js';
@@ -18,17 +19,16 @@ function element(tag, className, text) {
   return node;
 }
 
-function openShortcut(shortcut) {
+function openShortcut(shortcut, trigger) {
   editingId = shortcut?.id || null;
-  $('shortcut-title').textContent = shortcut ? 'ショートカットを編集' : 'ショートカットを追加';
+  $('shortcut-title').textContent = shortcut ? 'ページのショートカットを編集' : 'ページのショートカットを追加';
   $('shortcut-name').value = shortcut?.name || '';
   $('shortcut-url').value = shortcut?.url || '';
   $('shortcut-group').replaceChildren(...currentState.groups.map(group => new Option(group.name, group.id)));
   $('shortcut-group').value = shortcut?.groupId || currentState.activeGroup;
   $('shortcut-error').textContent = '';
   $('shortcut-delete').hidden = !shortcut;
-  $('shortcut-dialog').showModal();
-  $('shortcut-name').focus();
+  openDialog($('shortcut-dialog'), trigger, { focusTarget: $('shortcut-name') });
 }
 
 function applyAppearance(appearance) {
@@ -41,6 +41,7 @@ function applyAppearance(appearance) {
   $('moon-clip-shape').setAttribute('d', phasePath);
   document.body.dataset.backdrop = appearance.backdrop;
   document.body.dataset.motion = appearance.motion ? 'on' : 'off';
+  syncDialogMotion();
   document.body.classList.toggle('has-wallpaper', !!appearance.image);
   document.body.style.setProperty('--wallpaper', appearance.image ? `url("${appearance.image}")` : 'none');
 }
@@ -76,7 +77,7 @@ export function renderStandard(state) {
     if (!frequent) {
       const tools = element('div', 'shortcut-tools');
       const edit = element('button', '', '⋮'); edit.setAttribute('aria-label', `${shortcut.name}のショートカットを編集`);
-      edit.addEventListener('click', () => openShortcut(shortcut)); tools.append(edit);
+      edit.addEventListener('click', event => openShortcut(shortcut, event.currentTarget)); tools.append(edit);
       for (const [direction, label, symbol, disabled] of [['left','前へ','‹',index === 0],['right','後ろへ','›',index === sites.length - 1]]) {
         const move = element('button', '', symbol); move.disabled = disabled;
         move.setAttribute('aria-label', `${shortcut.name}を${label}移動`);
@@ -90,8 +91,9 @@ export function renderStandard(state) {
   if (!frequent && sites.length < 10) {
     const add = element('button', 'shortcut-tile shortcut-add');
     const icon = element('span', 'shortcut-icon', '＋'); icon.setAttribute('aria-hidden', 'true');
-    add.append(icon, element('span', 'shortcut-name', 'ショートカットを追加'));
-    add.addEventListener('click', () => openShortcut()); tiles.push(add);
+    add.setAttribute('aria-label', 'ページのショートカットを追加');
+    add.append(icon, element('span', 'shortcut-name', 'ページを追加'));
+    add.addEventListener('click', event => openShortcut(undefined, event.currentTarget)); tiles.push(add);
   }
   $('shortcuts-grid').replaceChildren(...tiles);
   firstRender = false;
@@ -105,19 +107,19 @@ export function setupStandard(handlers) {
     try { await searchOrNavigate($('web-search').value); }
     catch (error) { actions.toast(error.message); }
   });
-  $('apps-open').addEventListener('click', () => $('apps-dialog').showModal());
-  $('customize-open').addEventListener('click', () => $('customize-dialog').showModal());
+  $('apps-open').addEventListener('click', event => openDialog($('apps-dialog'), event.currentTarget));
+  $('customize-open').addEventListener('click', event => openDialog($('customize-dialog'), event.currentTarget));
   $('shortcut-form').addEventListener('submit', async event => {
     event.preventDefault();
     try {
       const url = shortcutURL($('shortcut-url').value);
-      if (await actions.mutate({ type: 'shortcut-save', id: editingId, name: $('shortcut-name').value, url, groupId: $('shortcut-group').value }, 'ショートカットを保存しました')) $('shortcut-dialog').close();
+      if (await actions.mutate({ type: 'shortcut-save', id: editingId, name: $('shortcut-name').value, url, groupId: $('shortcut-group').value }, 'ショートカットを保存しました')) closeDialog($('shortcut-dialog'));
     } catch (error) { $('shortcut-error').textContent = error.message; }
   });
   $('shortcut-delete').addEventListener('click', async () => {
     const deleted = actions.getState()?.shortcuts.find(item => item.id === editingId);
     if (await actions.mutate({ type: 'shortcut-delete', id: editingId }, 'ショートカットを削除しました')) {
-      undoShortcut = deleted; $('shortcut-dialog').close();
+      undoShortcut = deleted; closeDialog($('shortcut-dialog'));
       if (deleted) {
         const undo = element('button', 'undo-button', '元に戻す');
         undo.addEventListener('click', async () => {
